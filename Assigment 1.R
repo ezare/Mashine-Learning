@@ -1,0 +1,6 @@
+setwd("C:/Users/Ghirghir/Desktop/R mashine learning")
+summary(Assigment)
+plot(Assigment$`Annual-income`,Assigment$`Family-size`)
+plot(Assigment$`Annual-income`)
+hist(Assigment$`Annual-income`)
+summarise(Assigment,'Annual-income')
