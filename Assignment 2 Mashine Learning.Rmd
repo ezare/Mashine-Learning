@@ -1,0 +1,140 @@
+
+
+```{r}
+library(caret)
+library(ISLR)
+library(FNN)
+library(gmodels)
+#UniversalBank<-read.csv("C:/Users/suman/Documents/Machine Learning/class_work_probs/UniversalBank.csv")
+Elham<- read.csv("UniversalBank.csv")
+Elham<-Elham[,c(-1,-5)]
+str(Elham)
+
+# Assignment 1
+
+# Dummies
+library(dummies)
+dummy_model <- dummyVars(~Education,data=Elham)
+head(predict(dummy_model,Elham))
+UElham<- dummy.data.frame(Elham, names = c("Education"), sep= ".")
+
+# Normalization: 
+norm_model<-preProcess(UElham, method = c('range'))
+UElham_normalized<-predict(norm_model,UElham)
+UElham_Predictors<-UElham_normalized[,-10]
+UElham_labels<-UElham_normalized[,10]
+
+
+set.seed(123)
+inTrain = createDataPartition(UElham_normalized$Personal,p=0.6, list=FALSE) 
+Train_Data = UElham_normalized[inTrain,]
+Val_Data = UElham_normalized[-inTrain,]
+dim(Train_Data)
+summary(Train_Data)
+summary(Val_Data)
+
+
+Train_Predictors<-Train_Data[,-10]
+Val_Predictors<-Val_Data[,-10]
+
+Train_labels <-Train_Data[,10] 
+Val_labels  <-Val_Data[,10]
+
+Train_labels=as.factor(Train_labels)
+Val_labels=as.factor(Val_labels)
+UElham_labels<-as.factor(UElham_labels)
+
+#Knn method, k=1
+knn.pred <- knn(Train_Predictors,Val_Predictors,cl=Train_labels,k=1,prob = TRUE)
+knn.pred
+
+Q1 <- c(40, 10, 84, 2, 2, 0, 1, 0, 0, 0, 0, 1, 1)
+knn.pred1 <- knn(Train_Predictors, Q1, cl=Train_labels, k=1, prob = TRUE)
+knn.pred1
+```
+
+
+
+
+```{r}
+#Assignment 2
+
+accuracy.df <- data.frame(k = seq(1, 14, 1), accuracy = rep(0, 14))
+
+for(i in 1:14) {
+                  knn <- knn(Train_Predictors, Val_Predictors, cl = Train_labels, k = i)
+                  accuracy.df[i, 2] <- confusionMatrix(knn, Val_labels)$overall[1] 
+                }
+accuracy.df
+
+which.max( (accuracy.df$accuracy) )
+```
+
+
+
+
+```{r}
+# Assignment 3
+
+knn.pred3 <- knn(Train_Predictors,Val_Predictors,cl=Train_labels,k=3,prob = TRUE)
+confusionMatrix(knn.pred3,Val_labels)
+```
+
+
+
+```{r}
+# Assignment 4
+
+knn.pred4 <- knn(Train_Predictors, Q1, cl=Train_labels, k=3, prob = TRUE)
+knn.pred4
+
+knn.pred4 <- knn(UElham_Predictors, Q1, cl=UElham_labels, k=3, prob = TRUE)
+knn.pred4
+```
+
+
+
+```{r}
+# Assignment 5
+
+
+set.seed(123)
+Elham_Partition = createDataPartition(UElham_normalized$Personal,p=0.5, list=FALSE) 
+Training_Data = UElham_normalized[Elham_Partition,]     #50% of total data assigned to Test data
+Test_Valid_Data = UElham_normalized[-Elham_Partition,]
+
+Test_Index = createDataPartition(Test_Valid_Data$Personal.Loan, p=0.6, list=FALSE) 
+Validation_Data = Test_Valid_Data[Test_Index,]     # i partioned 60% test_valid_data to test and train to achieve 50:30:20 ratio
+Test_Data = Test_Valid_Data[-Test_Index,] 
+
+
+Training_Predictors<-Training_Data[,-10]
+Test_Predictors<-Test_Data[,-10]
+Validation_Predictors<-Validation_Data[,-10]
+
+
+Training_labels <-Training_Data[,10]
+Test_labels <-Test_Data[,10]
+Validation_labels <-Validation_Data[,10]
+
+
+Training_labels=as.factor(Training_labels)
+Test_labels<-as.factor(Test_labels)
+Validation_labels=as.factor(Validation_labels)
+
+knn.pred5 <- knn(Training_Predictors, Test_Predictors , cl=Training_labels, k=3, prob = TRUE)
+knn.pred5
+confusionMatrix(knn.pred5,Test_labels)
+
+knn.pred6 <- knn(Validation_Predictors, Test_Predictors, cl=Validation_labels, k=3, prob = TRUE)
+knn.pred6
+confusionMatrix(knn.pred6,Test_labels)
+
+
+#        0.959 for knn.pred5 i.e., for Training set
+#        0.951 for knn.pred6 i.e., for Validation set
+
+# The Training set has more data compared to validation set. hence, Accuracy has improved because the data feed to the model.
+
+```
+
