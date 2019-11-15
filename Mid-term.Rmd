@@ -1,0 +1,197 @@
+---
+title: "Mid Term"
+author: "Elham"
+date: "November 1, 2019"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+library(tidyverse)  
+library(factoextra) 
+library(ISLR)
+library(stats)
+library(HAC)
+library(flexclust)
+library(dplyr)
+library(stats)
+Universities1 <- read.csv("C:/Users/Ghirghir/Desktop/Mashine Learning/Assignment/mid-term.csv")
+
+set.seed(123)
+
+
+# Remove all NA from the table and summarize with this method:
+
+Universities <- Universities1[complete.cases(Universities1), ]
+
+
+```
+
+
+
+
+```{r}
+
+U <- Universities[,c(-1,-2,-3)]  # Excluding categorical measurements 
+
+# Scaling the data frame (z-score)
+
+df <- scale(U)
+head(U)
+distance <- get_dist(df)
+fviz_dist(distance) # plot
+
+
+# K-Means algorithm to find out the clusters 
+
+k4 <- kmeans(df, centers = 4, nstart = 25) # k = 4, number of restarts = 25
+
+k4$centers # output the centers
+
+k4$size # Number of universities in each cluster
+
+
+k4$cluster[120] # Identify the cluster of the 20th observation as an example
+
+
+fviz_cluster(k4, data = df) # Visualize the output(plot)
+
+
+# Elbow Method
+fviz_nbclust(df, kmeans, method = "wss")
+
+
+# Compute k-means clustering with k = 4
+set.seed(123)
+k3 <- kmeans(df, centers =3, nstart = 25)
+print(k3)
+
+fviz_cluster(k3, data = df) # Cluster Plot
+
+# Silhouette Method
+
+
+fviz_nbclust(df, kmeans, method = "silhouette")
+
+
+```
+```{r}
+#Creating the cluster index for 3 clusters
+set.seed(123)
+k3_median = kcca(U, k=3, kccaFamily("kmedians"))
+Clusters_3 <- predict(k3_median)
+```
+
+
+
+```{r}
+
+Un_scale <- scale(U, center=T, scale= T)
+U.dis <- dist(Un_scale)
+cah.ward <- hclust(U.dis, method = "ward.D2")
+plot(cah.ward)
+
+# partition in 3 groups
+groupes.cah <- cutree(cah.ward,k=3)
+```
+
+
+
+
+```{r}
+
+#Function for calculating summary statistics -y cluster membership variable
+stat.comp <-function(x,y){ #number of clusters
+K <- length(unique(y))
+#nb. Of instances
+n <- length(x)
+#overall mean
+m <- mean(x)
+#total sum of squares
+TSS <- sum((x-m)^2)
+#size of clusters
+nk <- table(y)
+#conditional mean
+mk <- tapply(x,y,mean)
+#between (explained) sum of squares
+BSS <- sum(nk * (mk-m)^2)
+#collect in a vector the means and the proportion of variance explained
+result <- c(mk,100.0*BSS/TSS)
+#set a name to the values
+names(result) <- c(paste("G",1:K),"% epl.")
+#return the results
+return(result)
+}
+#applying the function to the original variables of the dataset
+
+
+print(sapply(U,stat.comp ,y=groupes.cah))
+```
+
+
+
+```{r}
+#Merging the clusters to the original data frame
+set.seed(123)
+clusters <- data.frame(Clusters_3)
+Universities <- cbind(Universities, clusters)
+Universities$room_board_fees <- Universities$room + Universities$board + Universities$add..fees + Universities$estim..book.costs + Universities$estim..personal..
+```
+
+
+```{r}
+
+#All
+set.seed(123)
+Summary_cont <- Universities %>% 
+    group_by(Clusters_3) %>%
+    summarise( Acceptance_rate = sum(X..appl..accepted)/ sum(X..appli..rec.d), Avg_out_state_tuition=mean(out.of.state.tuition), Avg_int_state_tuition=mean(in.state.tuition), room_board_fees=mean(room_board_fees), mean_PHD_fac=mean(X..fac..w.PHD), mean_stud_fac_ratio=mean(stud..fac..ratio), mean_grad_rate=mean(Graduation.rate), priv_count = sum(Public..1...Private..2. == 2), pub_count = sum(Public..1...Private..2. == 1))
+Summary_cont
+
+#Private
+Summary_cont_priv <- Universities %>% filter(Public..1...Private..2. == 2) %>%
+    group_by(Clusters_3) %>%
+    summarise( Acceptance_rate = sum(X..appl..accepted)/ sum(X..appli..rec.d), Avg_out_state_tuition=mean(out.of.state.tuition), Avg_int_state_tuition=mean(in.state.tuition), room_board_fees=mean(room_board_fees), mean_PHD_fac=mean(X..fac..w.PHD), mean_stud_fac_ratio=mean(stud..fac..ratio), mean_grad_rate=mean(Graduation.rate))
+Summary_cont_priv
+
+
+#Public
+Summary_cont_pub <- Universities %>% filter(Public..1...Private..2. == 1) %>%
+    group_by(Clusters_3) %>%
+    summarise( Acceptance_rate = sum(X..appl..accepted)/ sum(X..appli..rec.d), Avg_out_state_tuition=mean(out.of.state.tuition), Avg_int_state_tuition=mean(in.state.tuition), room_board_fees=mean(room_board_fees), mean_PHD_fac=mean(X..fac..w.PHD), mean_stud_fac_ratio=mean(stud..fac..ratio), mean_grad_rate=mean(Graduation.rate))
+Summary_cont_pub
+```
+
+
+```{r}
+###  Cluster 3 contains as the only cluster the majority public schools which means that the average tution rates are low.Moreove, the state of the school, the operating budget of the university, or the amount of academic endowments of the university are additional information that could help to explain the data.There are differences between public and private schools which would explain the reason of falling the public schools into a different cluster.
+```
+
+
+
+```{r}
+# Isolating the data to Tufts University cluster 2 that have the lowest distance:
+
+norm_Tufts <- scale(Universities1[, c(4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)])
+Tufts <- filter(Universities1, College.Name == "Tufts University")
+
+#Euclidean Distance for Each Clusters. Cluster 1 has the lowest distance from Tufts:
+#Cluster 1
+dist(rbind(Tufts[, -c(1, 2, 3, 10)], k3$centers[1,]))
+#Cluster 2
+dist(rbind(Tufts[, -c(1, 2, 3, 10)], k3$centers[2,]))
+#Cluster 3
+dist(rbind(Tufts[, -c(1, 2, 3, 10)], k3$centers[3,]))
+```
+
+
+
+```{r}
+#Impute NAs with average from cluster 2
+cluster_2 <- filter(Universities, Clusters_3 == 2)
+avg_cluster_2 <- mean(cluster_2[,c(10)])
+Tufts[, c(10)] <- avg_cluster_2
+Tufts[, c(10)]
+```
+
