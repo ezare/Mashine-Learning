@@ -1,0 +1,71 @@
+
+
+```{r}
+library(class)
+library(caret)
+library(ISLR)
+library(dummies)
+library(dplyr)
+library(ggplot2)
+library(gmodels)
+library(e1071)
+library(pROC)
+FlightDelays <- read_csv("C:/Users/Ghirghir/Desktop/Mashine Learning/Assignment/FlightDelays.csv")
+
+
+
+# Summary and factors
+
+summary(FlightDelays)
+str(FlightDelays)
+FlightDelays$CRS_DEP_TIME <- as.factor(FlightDelays$CRS_DEP_TIME)
+FlightDelays$DEP_TIME <- as.factor(FlightDelays$DEP_TIME)
+FlightDelays$DAY_WEEK <- as.factor(FlightDelays$DAY_WEEK)
+FlightDelays$FlightStatus <- as.factor(FlightDelays$FlightStatus)
+
+Elham <- FlightDelays[,c(10,3,8,4,2,13)]
+
+# Divide data into train and validaton
+
+str(Elham)
+set.seed(123)
+Index_Train<-createDataPartition(Elham$FlightStatus, p=0.6, list=FALSE)
+Train <-Elham[Index_Train,]
+Validation<-Elham[-Index_Train,]
+
+
+# Naive Bayes model to predict whether the flight is delayed or not
+
+nb_model <- naiveBayes (Train$FlightStatus~., data = Train)
+
+nb_model
+
+
+# Predict the FlightStatus of Train dataset 
+Predicted_Train_labels <-predict(nb_model,Train)
+Predicted_Validation_labels <-predict(nb_model,Validation)
+
+
+
+# Tthe confusion matrix of the classifier
+CrossTable(x=Validation$FlightStatus,y=Predicted_Validation_labels, prop.chisq = FALSE) 
+
+prop.table(table(Train$DEST, Train$FlightStatus))
+
+
+
+# predictions and return probability of each class
+
+Predicted_Validation_labels <-predict(nb_model,Validation, type = "raw")
+
+# The first few values 
+head(Predicted_Validation_labels)
+
+# Passing the second column of the predicted probabilities 
+# That column contains the probability associate to ‘yes’
+roc(Valid$FlightStatus, V_labels[,2])
+
+plot.roc(Validation$FlightStatus,Predicted_Validation_labels[,2])
+
+```
+
