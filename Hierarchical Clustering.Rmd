@@ -1,0 +1,196 @@
+
+
+```{r}
+
+library("dbscan") 
+library("fpc")
+library('factoextra')
+library(cluster)
+library(NbClust)
+library(caret)
+library(ISLR)
+library(FNN)
+library(clValid)
+library(caTools)
+library(stats)
+library(HAC)
+library(hrbrthemes)
+library(GGally)
+library(viridis)
+
+library(readr)
+Cereals <- read_csv("C:/Users/Ghirghir/Desktop/Mashine Learning/Assignment/Cereals.csv")
+View(Cereals)
+
+```
+
+
+
+
+```{r}
+## PART A
+
+# Omit NA 
+
+Cereals <- na.omit(Cereals)
+head(Cereals)
+
+
+# Normalization
+
+Cereal <- Cereals[,c(-1,-2,-3)]  # Excluding categorical measurements 
+
+cereal_normalized <- scale(Cereal)
+
+head(cereal_normalized)
+ 
+ 
+# Hierarchical clustering to the data using Euclidean distance:
+
+# Dissimilarity matrix
+
+Cereal_dist <- dist(cereal_normalized, method = "euclidean")
+Cereal_dist
+
+
+# Compute with agnes and with different linkage methods
+
+hc_single <- agnes(cereal_normalized, method = "single")
+hc_complete <- agnes(cereal_normalized, method = "complete")
+hc_average <- agnes(cereal_normalized, method = "average")
+hc_ward <- agnes(cereal_normalized, method = "ward")
+
+
+# Compare Agglomerative coefficients
+
+print(hc_single$ac)
+
+print(hc_complete$ac)
+
+print(hc_average$ac)
+
+print(hc_ward$ac)
+
+
+# Based on the results, the Ward Method with 0.9046042 looks like best method since its value is higher than the others
+
+pltree(hc_ward, cex = 0.6, hang = -1, main = "Dendrogram of agnes") 
+
+
+## PART B
+
+# I choose 4 clusters
+
+# Cutting Dendrograms:
+
+clusters <- cutree(hc_ward, k = 4)
+fviz_dend(hc_ward, cex = 0.6, k = 4)
+table(clusters)
+cereals_clusters <- cbind(clusters, cereal_normalized)
+
+set.seed(123)
+km.res <- kmeans(Cereal, 4 , nstart = 25)
+fviz_cluster(km.res, data = Cereal, 
+             ellipse.type = "convex",
+             palette = "jco",
+             repel = TRUE,
+             ggtheme = theme_minimal())
+
+colnames(cereals_clusters)[1] <- "clusters"
+head(cereals_clusters)
+
+
+```
+
+
+
+```{r}
+## PART C
+
+# set labels as cluster membership and cereal name
+row.names(cereal_normalized) <- paste(clusters, ": ", row.names(cereal_normalized), sep = "")
+
+heatmap(as.matrix(cereal_normalized), Colv = NA, hclustfun = hclust, 
+        col=rev(paste("gray",1:99,sep="")))
+
+
+# To check the stability, first I will partition the data to 2 groups P_A and P_B
+P_A<-cereal_normalized[1:60,] # Partition A
+P_B<-cereal_normalized[61:74,] # Partition B
+Norm_A <- scale(P_A)
+Norm_B <- scale(P_B)
+
+
+```
+
+
+
+```{r}
+# I use the same method for clustering
+
+Dist_A <- dist(Norm_A, method = "euclidean")
+hclust_A <- hclust(Dist_A, method = "ward.D")
+clusters_A <- cutree(hclust_A, k = 4)
+
+# Clusters along with the cereals data
+
+cer_A <- cbind(clusters_A, Norm_A)
+colnames(cer_A)[1] <- "clust_A"
+plot(hclust_A, cex= 0.6, hang = -1)
+
+# Calculating the centroids
+
+N <- tapply(Norm_A, list(rep(cutree(hclust_A, 4), ncol(Norm_A)), col(Norm_A)), mean)
+colnames(N) <-colnames(cereal_normalized)
+N
+
+```
+
+
+
+```{r}
+
+# predicting B records
+a <- data.frame(observations=seq(1,14,1),cluster=rep(0,14))
+for(i in 0:14)
+{
+  x1<-as.data.frame(rbind(N,Norm_B[i,]))
+  y1<-as.matrix(get_dist(x1))
+  a[i,2]<-which.min(y1[4,-4])
+}
+
+
+cbind(partition=a$cluster,all.data=cereals_clusters[61:74,1])
+
+table(a$cluster==cereals_clusters[61:74,1])
+
+# Not much accurate
+
+
+# Extracting clustersrs
+
+groups <- clusters
+print_clusters <- function(labels, k) {
+  for(i in 1:k) {
+    print(paste("cluster", i))
+print(cereal_normalized[labels==i,c("calories","protein","fat","sodium","fiber","carbo","sugars","potass","vitamins")])}}
+print_clusters(groups, 4)
+
+
+```
+
+
+
+```{r}
+# Cluster 1 seems to have the highest ratings of neutritional factors which means it can be the "healthy cluster". It would be better to normalize the data rather than doing cluster analysis because the range of data is not the same scale.
+
+
+```
+
+
+
+
+
+
+
+```{r}
