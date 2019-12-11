@@ -1,0 +1,252 @@
+
+
+
+```{r}
+library("dbscan") 
+library("fpc")
+library('factoextra')
+library(cluster)
+library(NbClust)
+library(caret)
+library(ISLR)
+library(FNN)
+library(clValid)
+library(caTools)
+library(stats)
+library(HAC)
+library(hrbrthemes)
+library(GGally)
+library(viridis)
+
+BathSoap <- read_csv("C:/Users/Ghirghir/Desktop/BathSoap.csv")
+
+
+```
+
+
+
+```{r}
+
+###  QUESTION 1
+### A
+
+set.seed(123)
+
+# Selection for purchase behavior: No. of Brands, Brand Runs, total volume, Numbers of transactions, value, average volume per transaction, average price and brand wise purchase
+df_A <- BathSoap[,c(12,13,14,15,16,17,18,19,23:31)] 
+
+
+nrow(df_A)
+ncol(df_A)
+summary(df_A)
+
+
+# Scaling the data frame (z-score)
+
+df_B <- scale(df_A)
+head(df_B)
+distance <- get_dist(df_B)
+
+
+# K-Means algorithm to find out the clusters
+
+k3 <- kmeans(df_B, centers = 3, nstart = 25) # k = 3, number of restarts = 25
+k3$centers # Output
+k3$size 
+k3$cluster[120] 
+fviz_cluster(k3, data = df_B) # Plot
+
+# Elbow Method
+fviz_nbclust(df_B, kmeans, method = "wss")
+
+# Silhouette Method
+fviz_nbclust(df_B, kmeans, method = "silhouette")
+
+
+## Group 1 (n= 341): High loyality to the product they purchase. However, they don´t tend to purchse a high volume of products. In addition based on the average price, they seems to be less sensetive to the product costs.They don´t really change amoung the brand of products.
+
+## Group 2 (n= 76): Signs of loyality as well but less compared to group 1. This group purchases in higher volume of the products than, but is also more sensetive to the price. They mainly purchse the brands 352 and somewhat 55.
+
+## Group 3 (n= 183): People in this group have Very low loyality since they don´t stay with one brand and tend to change a lot. They tent to use several different brands, mostly others 999. In addition, They are not really sensetive to the price. 
+
+
+```
+
+
+
+
+```{r}
+### B
+
+set.seed(123)
+
+## Selected columns for Basis for Purchase: Purchase withhin promotion columns, Price categorywise purchase and selling propositionwise purchase.
+
+dm_A <- BathSoap[,c(20,21,22,32:46)]
+
+nrow(dm_A)
+ncol(dm_A)
+summary(dm_A)
+
+# Scaling the data frame (z-score)
+
+dm_B <- scale(dm_A)
+head(dm_B)
+distance <- get_dist(dm_B)
+
+
+# K-Means algorithm to find out the clusters
+
+k1 <- kmeans(dm_B, centers = 3, nstart = 25) # k = 3, number of restarts = 25
+k1$centers # output 
+k1$size 
+k1$cluster[120] 
+fviz_cluster(k1, data = dm_B) # plot
+
+# Elbow Method
+fviz_nbclust(dm_B, kmeans, method = "wss")
+
+# Silhouette Method
+fviz_nbclust(dm_B, kmeans, method = "silhouette")
+
+
+## Group 1 (n= 329): No reaction to promotions. Here, only price category 2 and 4 has been considered and selling propositions 5, 11 and 15.
+
+## Group 2 (n= 193): High reaction to promotions. More response to only  price category 1 and selling proposition 6, 7, 8, 9, 10, 12, 13, 15.
+
+## Group 3 (n= 78): This group reacts mainly to other promotions. It responds to price category 3 and selling proposition 14.
+
+
+
+```
+
+
+
+
+```{r}
+### C
+
+set.seed(123)
+ds_A <- BathSoap[,c(12:46)]
+
+nrow(ds_A)
+ncol(ds_A)
+summary(ds_A)
+
+# Scaling the data frame (z-score)
+
+ds_C <- scale(ds_A)
+head(ds_C)
+distance3 <- get_dist(ds_C)
+
+
+# K-Means algorithm to find out the clusters
+
+k2 <- kmeans(ds_C, centers = 3, nstart = 25) # k = 3, number of restarts = 25
+k2$centers # output 
+k2$size 
+k2$cluster[120] 
+fviz_cluster(k2, data = ds_C) # plot
+
+# Elbow Method
+fviz_nbclust(ds_C, kmeans, method = "wss")
+
+# Silhouette Method
+fviz_nbclust(ds_C, kmeans, method = "silhouette")
+
+
+## Group 1 (n= 296): This group is loyal with high volume of purchasing. It is sensetive to the price and doesn´t require promotion. It responsed to Brands 57-144, 286, 481, 352, Prices 2 and  and selling propositions 5 and somewhat 11.
+
+## Group 2 (n= 230): Not at all loyal with low volume of purchasing in same brand. Average price is high. This group reacts to promotions, purchases several brands and reacts to price category 1 and several selling propositions. 
+
+
+## Group 3 (n= 74): Very loyal with low average price. More reaction to other promotions. Response to brand 55, price category 3 and selling proposition 14.
+
+
+
+```
+
+
+Based on WSS and Silhouette in each step, the best numbers for K are 2 and 3. WSS displays 3 and Silhouette 2. I order to have better comparison for the clusters, I prefered to choosed k= 3.
+
+
+```{r}
+
+### QUESTION 2
+
+set.seed(123)
+
+## For this part, I considered divers background and the variable which responded mostly in previous parts.
+
+dn_B <- BathSoap[,c(2:9,11:15,17,19,20:31,36:44)]
+
+nrow(dn_B)
+ncol(dn_B)
+summary(dn_B)
+
+# Scaling the data frame (z-score)
+
+dn_C <- scale(dn_B)
+head(dn_C)
+distance <- get_dist(dn_C)
+
+
+# K-Means algorithm to find out the clusters
+
+k5 <- kmeans(dn_C, centers = 3, nstart = 25) # k = 3, number of restarts = 25
+k5$centers # output 
+k5$size 
+k5$cluster[120] 
+fviz_cluster(k5, data = dn_C) # plot
+
+
+# Elbow Method
+fviz_nbclust(dn_C, kmeans, method = "wss")
+
+# Silhouette Method
+fviz_nbclust(dn_C, kmeans, method = "silhouette")
+
+
+## Group 1 (n= 261): The demographics which had high percentages were FEH, MT, SEX,  AGE, EDU, HS and Affluence Index.They display low amount of loyality with high amount of transactions in different brands and average price as well as high response to promotion and selling propositions and several brands
+
+## Group 2 (n = 271): This group contains high percentages for SEC, FEH, MT, SEX AGE and HS. It shows high loyality with low amount of transactions between different brands and average price, no need for promotion and purchasing limited numbers of brand and open to selling proposition 5 only.
+
+## Group 3 (n=68): This group is only made of Children! High average price, respond to other promotions, no clear respond to brands. Open to selling propositions 10, 12 and 13.
+
+
+```
+
+
+
+
+
+```{r}
+# QUESTION 3
+
+## Comments and suggestions for a successful market:
+
+## A successful approach is at first, based on the demography of the group members and their purchase and how loyal they can be. The 3 groups look very divers with different preferences. Therefore, it is more beneficial to promote differently for each one of them. 
+## Group 1, includes different gender who have different age, look educated and prefer products which are durable. This group displays low amount of loyalty with high amount of transactions in different brands and average price as well as high response to promotion and selling proposition. Therefore, my suggestion would be promoting to this group product which are, for instance, separate for different gender, with considering their age as well. On the other hand, the offered product should have high quality to stay for longer time. So, this group is ready to pay higher money for getting better quality. 
+
+## Group 2, contains high percentages for Socioeconomic class, who have different family status and native language. This group put high value on their eating habit as well. In addition, it shows high loyalty with low amount of transactions between different brands and average price. Group members don´t need for promotion and only selling proposition 5 has been considered. It looks like this group is less flexible compared to the first group based on their purchases and spending. It would be better to target the members where they are more sensitive and care about. For instance, advertising to them organic and bio products. Also, it is important to be careful about the language of these group.
+
+## Group 3, contains interestingly only children. It also displays high average price, respond to other promotions and several selling propositions 10, 12 and 13.  Since children do not have purchase power and do not decide on completely about their preferences like adults, I would recommend to target the parents of them. Since the data displays flexibility toward the prices and some selling propositions, it would make sense to advertise and encourage parent to purchase products for their children. 
+
+
+## It is crusial to consider to which direction the demand is going. Based on overal data the demand for brands Br.Cd.57_144, Br.Cd.55, Br.Cd.272, Br.Cd.24 and Br.Cd.352 have been with higher percentage. It is beneficial for Bath soap to concentrate on those brands by considering other promotions and several selling propositions categories like 5, 6, 8, 10, 12 and 13. The reactions to selling propositions have been more positive in several segments.   
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
